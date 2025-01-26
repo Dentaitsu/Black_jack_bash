@@ -41,70 +41,81 @@ function calculate_hand_value {
 }
 
 function game_loop {
-    dealer_hand=($(draw_card) $(draw_card))
-    player_hand=($(draw_card) $(draw_card))
-
     while true; do
-        echo
-        echo "Dealer's hand:"
-        echo "Card 1: [Hidden]"
-        echo "Card 2: ${dealer_hand[1]}"
-        echo
-        echo "Your hand: ${player_hand[*]}"
-        player_total=$(calculate_hand_value "${player_hand[@]}")
-        echo "Your total: $player_total"
+        dealer_hand=($(draw_card) $(draw_card))
+        player_hand=($(draw_card) $(draw_card))
 
-        if [[ $player_total -gt 21 ]]; then
-            echo "Bust! You lose!"
-            return
+        while true; do
+            echo
+            echo "Dealer's hand:"
+            echo "Card 1: [Hidden]"
+            echo "Card 2: ${dealer_hand[1]}"
+            echo
+            echo "Your hand: ${player_hand[*]}"
+            player_total=$(calculate_hand_value "${player_hand[@]}")
+            echo "Your total: $player_total"
+
+            if [[ $player_total -gt 21 ]]; then
+                echo "Bust! You lose!"
+                break
+            fi
+
+            echo
+            echo "What would you like to do? (stand/hit/double)"
+            read -p "Enter your choice: " choice
+
+            case $choice in
+                "stand")
+                    break
+                    ;;
+                "hit")
+                    new_card=$(draw_card)
+                    player_hand+=("$new_card")
+                    echo "You drew: $new_card"
+                    ;;
+                "double")
+                    new_card=$(draw_card)
+                    player_hand+=("$new_card")
+                    echo "You doubled down and drew: $new_card"
+                    break
+                    ;;
+                *)
+                    echo "Invalid choice. Please choose stand, hit, or double."
+                    ;;
+            esac
+        done
+
+        if [[ $player_total -le 21 ]]; then
+            echo
+            echo "Dealer's turn..."
+            dealer_total=$(calculate_hand_value "${dealer_hand[@]}")
+            while [[ $dealer_total -lt 17 ]]; do
+                new_card=$(draw_card)
+                dealer_hand+=("$new_card")
+                dealer_total=$(calculate_hand_value "${dealer_hand[@]}")
+            done
+
+            echo "Dealer's hand: ${dealer_hand[*]}"
+            echo "Dealer's total: $dealer_total"
+
+            if [[ $dealer_total -gt 21 ]]; then
+                echo "Dealer busts! You win!"
+            elif [[ $dealer_total -gt $player_total ]]; then
+                echo "Dealer wins!"
+            elif [[ $dealer_total -lt $player_total ]]; then
+                echo "You win!"
+            else
+                echo "It's a tie!"
+            fi
         fi
 
         echo
-        echo "What would you like to do? (stand/hit/double)"
-        read -p "Enter your choice: " choice
-
-        case $choice in
-            "stand")
-                break
-                ;;
-            "hit")
-                new_card=$(draw_card)
-                player_hand+=("$new_card")
-                echo "You drew: $new_card"
-                ;;
-            "double")
-                new_card=$(draw_card)
-                player_hand+=("$new_card")
-                echo "You doubled down and drew: $new_card"
-                break
-                ;;
-            *)
-                echo "Invalid choice. Please choose stand, hit, or double."
-                ;;
-        esac
+        read -p "Would you like to play again? (yes/no): " play_again
+        if ! [[ "$play_again" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+            slow_text "Thanks for playing! Goodbye!" 0.1
+            exit 0
+        fi
     done
-
-    echo
-    echo "Dealer's turn..."
-    dealer_total=$(calculate_hand_value "${dealer_hand[@]}")
-    while [[ $dealer_total -lt 17 ]]; do
-        new_card=$(draw_card)
-        dealer_hand+=("$new_card")
-        dealer_total=$(calculate_hand_value "${dealer_hand[@]}")
-    done
-
-    echo "Dealer's hand: ${dealer_hand[*]}"
-    echo "Dealer's total: $dealer_total"
-
-    if [[ $dealer_total -gt 21 ]]; then
-        echo "Dealer busts! You win!"
-    elif [[ $dealer_total -gt $player_total ]]; then
-        echo "Dealer wins!"
-    elif [[ $dealer_total -lt $player_total ]]; then
-        echo "You win!"
-    else
-        echo "It's a tie!"
-    fi
 }
 
 function display_rules {
