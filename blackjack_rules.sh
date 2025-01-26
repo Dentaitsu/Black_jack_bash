@@ -1,5 +1,19 @@
 #!/bin/bash
 
+function start_game {
+    echo "Starting the game!"
+    echo
+    echo "Dealer's hand:"
+    echo "Card 1: [Hidden]"
+    echo "Card 2: 8♠"
+    echo
+    echo "Your hand:"
+    echo "Card 1: A♣"
+    echo "Card 2: 10♦"
+    echo
+    echo "Good luck!"
+}
+
 echo "Welcome to Blackjack!"
 echo
 echo "Here are the rules of the game:"
@@ -21,7 +35,7 @@ echo
 read -p "Would you like to play Blackjack? (yes/no): " response
 
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-    echo "Great! Let's get ready to play!"
+    start_game
 else
     echo "Alright, maybe next time! Have a great day!"
 fi
