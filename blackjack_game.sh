@@ -8,6 +8,8 @@ cards=("2♠" "3♠" "4♠" "5♠" "6♠" "7♠" "8♠" "9♠" "10♠" "J♠" "Q
 declare -A card_values=( ["2"]=2 ["3"]=3 ["4"]=4 ["5"]=5 ["6"]=6 ["7"]=7 ["8"]=8 ["9"]=9 ["10"]=10 
                          ["J"]=10 ["Q"]=10 ["K"]=10 ["A"]=11 )
 
+currency=100
+
 function slow_text {
     local text="$1"
     local delay="${2:-0.05}"
@@ -40,23 +42,46 @@ function calculate_hand_value {
     echo $total
 }
 
-function game_loop {
+function show_hand {
+    local owner="$1"
+    shift
+    local hand=("$@")
+    slow_text "$owner's hand:" 0.05
+    for card in "${hand[@]}"; do
+        slow_text "$card" 0.1
+    done
+}
+
+function place_bet {
     while true; do
+        slow_text "You have $currency chips." 0.1
+        read -p "Enter your bet: " bet
+        if [[ "$bet" =~ ^[0-9]+$ && $bet -le $currency && $bet -gt 0 ]]; then
+            echo $bet
+            return
+        else
+            slow_text "Invalid bet. Please enter a valid amount." 0.1
+        fi
+    done
+}
+
+function game_loop {
+    while [[ $currency -gt 0 ]]; do
+        local bet=$(place_bet)
+
         dealer_hand=($(draw_card) $(draw_card))
         player_hand=($(draw_card) $(draw_card))
 
         while true; do
             echo
-            echo "Dealer's hand:"
-            echo "Card 1: [Hidden]"
-            echo "Card 2: ${dealer_hand[1]}"
-            echo
-            echo "Your hand: ${player_hand[*]}"
+            show_hand "Dealer" "[Hidden]" "${dealer_hand[1]}"
+            show_hand "Your" "${player_hand[@]}"
             player_total=$(calculate_hand_value "${player_hand[@]}")
-            echo "Your total: $player_total"
+            slow_text "Your total: $player_total" 0.1
 
             if [[ $player_total -gt 21 ]]; then
-                echo "Bust! You lose!"
+                slow_text "Bust! You lose your bet of $bet chips." 0.1
+                currency=$((currency - bet))
                 break
             fi
 
@@ -71,23 +96,27 @@ function game_loop {
                 "hit")
                     new_card=$(draw_card)
                     player_hand+=("$new_card")
-                    echo "You drew: $new_card"
+                    slow_text "You drew: $new_card" 0.1
                     ;;
                 "double")
-                    new_card=$(draw_card)
-                    player_hand+=("$new_card")
-                    echo "You doubled down and drew: $new_card"
-                    break
+                    if [[ $bet -le $currency ]]; then
+                        new_card=$(draw_card)
+                        player_hand+=("$new_card")
+                        slow_text "You doubled your bet to $((bet * 2)) and drew: $new_card" 0.1
+                        bet=$((bet * 2))
+                        break
+                    else
+                        slow_text "You don't have enough chips to double." 0.1
+                    fi
                     ;;
                 *)
-                    echo "Invalid choice. Please choose stand, hit, or double."
+                    slow_text "Invalid choice. Please choose stand, hit, or double." 0.1
                     ;;
             esac
         done
 
         if [[ $player_total -le 21 ]]; then
-            echo
-            echo "Dealer's turn..."
+            slow_text "Dealer's turn..." 0.1
             dealer_total=$(calculate_hand_value "${dealer_hand[@]}")
             while [[ $dealer_total -lt 17 ]]; do
                 new_card=$(draw_card)
@@ -95,24 +124,32 @@ function game_loop {
                 dealer_total=$(calculate_hand_value "${dealer_hand[@]}")
             done
 
-            echo "Dealer's hand: ${dealer_hand[*]}"
-            echo "Dealer's total: $dealer_total"
+            show_hand "Dealer" "${dealer_hand[@]}"
+            slow_text "Dealer's total: $dealer_total" 0.1
 
             if [[ $dealer_total -gt 21 ]]; then
-                echo "Dealer busts! You win!"
+                slow_text "Dealer busts! You win $bet chips!" 0.1
+                currency=$((currency + bet))
             elif [[ $dealer_total -gt $player_total ]]; then
-                echo "Dealer wins!"
+                slow_text "Dealer wins! You lose your bet of $bet chips." 0.1
+                currency=$((currency - bet))
             elif [[ $dealer_total -lt $player_total ]]; then
-                echo "You win!"
+                slow_text "You win! You earn $bet chips!" 0.1
+                currency=$((currency + bet))
             else
-                echo "It's a tie!"
+                slow_text "It's a tie! Your bet of $bet chips is returned." 0.1
             fi
+        fi
+
+        if [[ $currency -le 0 ]]; then
+            slow_text "You're out of chips! The casino has kicked you out. Better luck next time!" 0.1
+            exit 0
         fi
 
         echo
         read -p "Would you like to play again? (yes/no): " play_again
         if ! [[ "$play_again" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-            slow_text "Thanks for playing! Goodbye!" 0.1
+            slow_text "Thanks for playing! You leave with $currency chips. Goodbye!" 0.1
             exit 0
         fi
     done
@@ -121,26 +158,30 @@ function game_loop {
 function display_rules {
     slow_text "Welcome to Blackjack!" 0.1
     slow_text "Here are the rules of the game:" 0.1
-    slow_text "1. The goal of Blackjack is to beat the dealer's hand without going over 21." 0.05
-    slow_text "2. Face cards (Kings, Queens, and Jacks) are worth 10 points." 0.05
-    slow_text "3. Aces are worth 1 or 11 points, whichever is more favorable for your hand." 0.05
-    slow_text "4. Each player starts with two cards, and the dealer also gets two cards." 0.05
-    slow_text "5. Players can choose to:" 0.05
-    slow_text "   - 'Hit': Take another card." 0.05
-    slow_text "   - 'Stand': Keep their current total and end their turn." 0.05
-    slow_text "6. If your hand goes over 21, you 'bust' and lose the round." 0.05
-    slow_text "7. The dealer must draw cards until their total is 17 or higher." 0.05
-    slow_text "8. Whoever has the highest total without going over 21 wins!" 0.05
-    slow_text "Good luck and have fun!" 0.1
+    slow_text "1. The goal is to beat the dealer without going over 21." 0.05
+    slow_text "2. Face cards are worth 10 points. Aces are 1 or 11." 0.05
+    slow_text "3. Players start with two cards, as does the dealer." 0.05
+    slow_text "4. Players can 'Hit', 'Stand', or 'Double' their bet." 0.05
+    slow_text "5. Dealer must draw until 17 or higher." 0.05
+    slow_text "6. Win by having a higher total than the dealer without exceeding 21." 0.05
+    slow_text "7. Run out of chips, and you're out of the casino!" 0.1
     echo
 }
 
-display_rules
+function start_game {
+    read -p "Would you like to hear the rules? (yes/no): " show_rules
+    if [[ "$show_rules" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+        display_rules
+    else
+        slow_text "Skipping rules. Let's get started!" 0.1
+    fi
 
-read -p "Would you like to play Blackjack? (yes/no): " response
+    read -p "Would you like to play Blackjack? (yes/no): " response
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+        game_loop
+    else
+        slow_text "Alright, maybe next time! Have a great day!" 0.1
+    fi
+}
 
-if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-    game_loop
-else
-    slow_text "Alright, maybe next time! Have a great day!" 0.1
-fi
+start_game
