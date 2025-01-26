@@ -17,5 +17,11 @@ echo "8. Whoever has the highest total without going over 21 wins!"
 echo
 echo "Good luck and have fun!"
 echo
-echo "This is just the start of our Blackjack game. Stay tuned for more features!"
 
+read -p "Would you like to play Blackjack? (yes/no): " response
+
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+    echo "Great! Let's get ready to play!"
+else
+    echo "Alright, maybe next time! Have a great day!"
+fi
