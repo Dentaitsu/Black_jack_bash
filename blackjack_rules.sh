@@ -1,15 +1,25 @@
 #!/bin/bash
 
-function start_game {
+cards=("2♠" "3♠" "4♠" "5♠" "6♠" "7♠" "8♠" "9♠" "10♠" "J♠" "Q♠" "K♠" "A♠"
+       "2♥" "3♥" "4♥" "5♥" "6♥" "7♥" "8♥" "9♥" "10♥" "J♥" "Q♥" "K♥" "A♥"
+       "2♦" "3♦" "4♦" "5♦" "6♦" "7♦" "8♦" "9♦" "10♦" "J♦" "Q♦" "K♦" "A♦"
+       "2♣" "3♣" "4♣" "5♣" "6♣" "7♣" "8♣" "9♣" "10♣" "J♣" "Q♣" "K♣" "A♣")
+
+function deal_cards {
+    dealer_card1=${cards[$RANDOM % ${#cards[@]}]}
+    dealer_card2=${cards[$RANDOM % ${#cards[@]}]}
+    player_card1=${cards[$RANDOM % ${#cards[@]}]}
+    player_card2=${cards[$RANDOM % ${#cards[@]}]}
+
     echo "Starting the game!"
     echo
     echo "Dealer's hand:"
     echo "Card 1: [Hidden]"
-    echo "Card 2: 8♠"
+    echo "Card 2: $dealer_card2"
     echo
     echo "Your hand:"
-    echo "Card 1: A♣"
-    echo "Card 2: 10♦"
+    echo "Card 1: $player_card1"
+    echo "Card 2: $player_card2"
     echo
     echo "Good luck!"
 }
@@ -35,7 +45,7 @@ echo
 read -p "Would you like to play Blackjack? (yes/no): " response
 
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-    start_game
+    deal_cards
 else
     echo "Alright, maybe next time! Have a great day!"
 fi
