@@ -8,6 +8,16 @@ cards=("2♠" "3♠" "4♠" "5♠" "6♠" "7♠" "8♠" "9♠" "10♠" "J♠" "Q
 declare -A card_values=( ["2"]=2 ["3"]=3 ["4"]=4 ["5"]=5 ["6"]=6 ["7"]=7 ["8"]=8 ["9"]=9 ["10"]=10 
                          ["J"]=10 ["Q"]=10 ["K"]=10 ["A"]=11 )
 
+function slow_text {
+    local text="$1"
+    local delay="${2:-0.05}"
+    for ((i=0; i<${#text}; i++)); do
+        echo -n "${text:i:1}"
+        sleep "$delay"
+    done
+    echo
+}
+
 function draw_card {
     echo "${cards[$RANDOM % ${#cards[@]}]}"
 }
@@ -97,10 +107,29 @@ function game_loop {
     fi
 }
 
+function display_rules {
+    slow_text "Welcome to Blackjack!" 0.1
+    slow_text "Here are the rules of the game:" 0.1
+    slow_text "1. The goal of Blackjack is to beat the dealer's hand without going over 21." 0.05
+    slow_text "2. Face cards (Kings, Queens, and Jacks) are worth 10 points." 0.05
+    slow_text "3. Aces are worth 1 or 11 points, whichever is more favorable for your hand." 0.05
+    slow_text "4. Each player starts with two cards, and the dealer also gets two cards." 0.05
+    slow_text "5. Players can choose to:" 0.05
+    slow_text "   - 'Hit': Take another card." 0.05
+    slow_text "   - 'Stand': Keep their current total and end their turn." 0.05
+    slow_text "6. If your hand goes over 21, you 'bust' and lose the round." 0.05
+    slow_text "7. The dealer must draw cards until their total is 17 or higher." 0.05
+    slow_text "8. Whoever has the highest total without going over 21 wins!" 0.05
+    slow_text "Good luck and have fun!" 0.1
+    echo
+}
+
+display_rules
+
 read -p "Would you like to play Blackjack? (yes/no): " response
 
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
     game_loop
 else
-    echo "Alright, maybe next time! Have a great day!"
+    slow_text "Alright, maybe next time! Have a great day!" 0.1
 fi
